@@ -1,0 +1,329 @@
+swagger: '2.0'
+info:
+  title: Task Manager API
+  description: A simple API for managing tasks
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+host: api.example.com
+basePath: /v1
+schemes:
+  - http
+  
+tags:
+  - name: tasks
+    description: Task management endpoints
+
+# securityDefinitions:
+#   BearerAuth:
+#     type: apiKey
+#     name: Authorization
+#     in: header
+#     description: 'JWT token in the format: Bearer {token}'
+
+# Global security disabled for development/testing
+# security:
+#  - BearerAuth: []
+
+paths:
+  /tasks:
+    get:
+      summary: List all tasks
+      description: Returns a list of tasks that match the provided filters
+      operationId: listTasks
+      tags:
+        - tasks
+      parameters:
+        - name: status
+          in: query
+          required: false
+          type: string
+          enum: [pending, in-progress, completed]
+        - name: limit
+          in: query
+          required: false
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: A list of tasks
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/definitions/Task'
+              pagination:
+                $ref: '#/definitions/Pagination'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '500':
+          $ref: '#/responses/InternalServerError'
+          
+    post:
+      summary: Create a new task
+      description: Creates a new task with the provided details
+      operationId: createTask
+      tags:
+        - tasks
+      parameters:
+        - name: task
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/TaskCreate'
+      responses:
+        '201':
+          description: Task created successfully
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '#/definitions/Task'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '500':
+          $ref: '#/responses/InternalServerError'
+
+  /tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        type: string
+        format: uuid
+    
+    get:
+      summary: Get task by ID
+      description: Returns a single task by its ID
+      operationId: getTask
+      tags:
+        - tasks
+      responses:
+        '200':
+          description: Task found
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '#/definitions/Task'
+        '404':
+          $ref: '#/responses/NotFound'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '500':
+          $ref: '#/responses/InternalServerError'
+    
+    put:
+      summary: Update a task
+      description: Updates an existing task with the provided details
+      operationId: updateTask
+      tags:
+        - tasks
+      parameters:
+        - name: task
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/TaskUpdate'
+      responses:
+        '200':
+          description: Task updated successfully
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '#/definitions/Task'
+        '400':
+          $ref: '#/responses/BadRequest'
+        '404':
+          $ref: '#/responses/NotFound'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '500':
+          $ref: '#/responses/InternalServerError'
+    
+    delete:
+      summary: Delete a task
+      description: Deletes a task by its ID
+      operationId: deleteTask
+      tags:
+        - tasks
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          $ref: '#/responses/NotFound'
+        '401':
+          $ref: '#/responses/Unauthorized'
+        '500':
+          $ref: '#/responses/InternalServerError'
+
+definitions:
+  Task:
+    type: object
+    required:
+      - id
+      - title
+      - status
+      - createdAt
+      - updatedAt
+    properties:
+      id:
+        type: string
+        format: uuid
+        example: "123e4567-e89b-12d3-a456-426614174000"
+      title:
+        type: string
+        example: "Complete project proposal"
+      description:
+        type: string
+        example: "Write up the initial project proposal with timeline and budget"
+      status:
+        type: string
+        enum: [pending, in-progress, completed]
+        example: "pending"
+      dueDate:
+        type: string
+        format: date-time
+      priority:
+        type: string
+        enum: [low, medium, high]
+        example: "medium"
+      tags:
+        type: array
+        items:
+          type: string
+        example: ["work", "project"]
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+        
+  TaskCreate:
+    type: object
+    required:
+      - title
+    properties:
+      title:
+        type: string
+        example: "Complete project proposal"
+      description:
+        type: string
+        example: "Write up the initial project proposal with timeline and budget"
+      status:
+        type: string
+        enum: [pending, in-progress, completed]
+        default: "pending"
+      dueDate:
+        type: string
+        format: date-time
+      priority:
+        type: string
+        enum: [low, medium, high]
+        default: "medium"
+      tags:
+        type: array
+        items:
+          type: string
+          
+  TaskUpdate:
+    type: object
+    properties:
+      title:
+        type: string
+      description:
+        type: string
+      status:
+        type: string
+        enum: [pending, in-progress, completed]
+      dueDate:
+        type: string
+        format: date-time
+      priority:
+        type: string
+        enum: [low, medium, high]
+      tags:
+        type: array
+        items:
+          type: string
+          
+  Pagination:
+    type: object
+    properties:
+      total:
+        type: integer
+        description: Total number of items
+        example: 50
+      limit:
+        type: integer
+        description: Number of items per page
+        example: 20
+      offset:
+        type: integer
+        description: Current offset from first item
+        example: 0
+      hasMore:
+        type: boolean
+        description: Whether there are more items to fetch
+        example: true
+          
+  Error:
+    type: object
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      details:
+        type: object
+  
+responses:
+  BadRequest:
+    description: Bad request
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        code: "bad_request"
+        message: "Invalid request parameters"
+        
+  Unauthorized:
+    description: Unauthorized access
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        code: "unauthorized"
+        message: "Authentication required"
+        
+  NotFound:
+    description: Resource not found
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        code: "not_found"
+        message: "The requested resource was not found"
+        
+  InternalServerError:
+    description: Internal server error
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        code: "internal_error"
+        message: "An unexpected error occurred"

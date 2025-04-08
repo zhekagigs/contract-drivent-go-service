@@ -1,0 +1,37 @@
+name: Publish Client Library
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'api/swagger.yaml'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20'
+      
+      - name: Install go-swagger
+        run: go install github.com/go-swagger/go-swagger/cmd/swagger@latest
+      
+      - name: Generate client code
+        run: swagger generate client -f ./api/swagger.yaml -A taskmanager --target ./pkg/client
+      
+      - name: Run tests
+        run: go test ./pkg/client/...
+      
+      - name: Tag and release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: client-v${{ github.run_number }}
+          release_name: Client Library v${{ github.run_number }}
+          draft: false
+          prerelease: false
