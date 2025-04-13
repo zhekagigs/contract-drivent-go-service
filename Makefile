@@ -2,8 +2,9 @@
 
 # Generate server code from OpenAPI spec
 generate:
+	mkdir ./internal
+	mkdir ./internal/generated
 	swagger generate server -f swagger.yaml -A taskmanager --target ./internal/generated
-
 # Generate client code from OpenAPI spec
 generate-client:
 	swagger generate client -f ./api/swagger.yaml -A taskmanager --target ./pkg/client
